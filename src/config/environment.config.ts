@@ -28,4 +28,5 @@ export default {
     iv: process.env.JWT_IV || '',
     expiresIn: process.env.JWT_EXPIRES_IN || '2 days',
   },
+  swagger: process.env.SWAGGER || 'true',
 };
