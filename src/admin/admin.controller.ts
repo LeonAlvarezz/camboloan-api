@@ -13,10 +13,11 @@ import { Auth } from 'decorators/auth.decorator';
 import { AuthJwt } from '@/auth/entities/auth.type';
 import { Public } from 'decorators/public-route.decorator';
 import { Response, Request } from 'express';
-import { CookieUtil } from '@/utils/cookie';
+import { Cookie, CookieUtil } from '@/utils/cookie';
 import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 import { AdminDto, AuthenticatedAdminDto } from './dto/admin.dto';
 import { ApiEnvelopResponse } from 'decorators/response-data.decorator';
+import { Success, SuccessResponse } from '@/shared/response/response';
 
 @Controller('admins')
 export class AdminController {
@@ -61,8 +62,18 @@ export class AdminController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { data, refresh_token } = await this.adminService.login(payload);
+    this.cookieUtil.setAccessTokenCookie(res, data.access_token);
     this.cookieUtil.setRefreshTokenCookie(res, refresh_token);
     return data;
+  }
+
+  @ApiOperation({ summary: 'Admin Logout' })
+  @ApiEnvelopResponse(SuccessResponse)
+  @Post('logout')
+  logout(@Res() res: Response) {
+    this.cookieUtil.deleteCookie(res, Cookie.ACCESS_TOKEN);
+    this.cookieUtil.deleteCookie(res, Cookie.REFRESH_TOKEN);
+    return Success(res);
   }
 
   //TODO: Store the refresh token in Redis, so we can easily revoke it later
@@ -70,7 +81,7 @@ export class AdminController {
   @ApiEnvelopResponse(AuthAccessToken)
   @Post('refresh')
   refresh(@Req() req: Request) {
-    const refresh_token = this.cookieUtil.getRefreshTokenCookie(req);
+    const refresh_token = this.cookieUtil.getCookie(req, Cookie.REFRESH_TOKEN);
     if (!refresh_token) {
       throw new UnauthorizedException(
         'Access Denied. No refresh token provided.',
