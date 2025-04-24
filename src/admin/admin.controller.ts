@@ -34,7 +34,6 @@ export class AdminController {
   }
 
   @ApiOperation({ summary: 'Admin Get Me' })
-  // @ApiCreatedResponse({ type: [AuthJwt] })
   @ApiEnvelopResponse(AuthJwt)
   @ApiBearerAuth()
   @Get('me')

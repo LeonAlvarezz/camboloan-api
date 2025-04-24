@@ -1,10 +1,9 @@
 import { createCipheriv, createDecipheriv } from 'crypto';
 import { DynamicBuffer } from '@oslojs/binary';
-import { decodeBase64 } from '@oslojs/encoding';
 import { config } from '@/config';
 import crypto from 'crypto';
 
-const key = decodeBase64(config.encryptionCode);
+const key = config.encryptionCode;
 export function encrypt(data: Uint8Array): Uint8Array {
   const iv = new Uint8Array(16);
   crypto.getRandomValues(iv);
