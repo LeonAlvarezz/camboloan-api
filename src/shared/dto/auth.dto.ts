@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsDate,
   IsEmail,
-  IsJWT,
   IsNotEmpty,
   IsNumber,
   IsString,
@@ -44,6 +44,7 @@ export class Login {
 
 export class AuthAccessToken {
   @ApiProperty()
-  @IsJWT()
-  access_token: string;
+  token: string;
+  @IsDate()
+  expires_at: Date;
 }

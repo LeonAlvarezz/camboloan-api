@@ -5,20 +5,20 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { UserService } from '../user/user.service'; // Adjust the path as needed
 import { AdminRepository } from './admin.repository';
 import { AuthRepository } from '@/auth/auth.repository';
 import { Login, Signup } from '@/shared/dto/auth.dto';
 import { db } from '@/db';
 import { verifyTOTP } from '@oslojs/otp';
-import { config } from '@/config';
+import { env } from '@/config';
 import {
-  JwtSign,
-  JwtVerify,
+  decodeToSessionId,
   decrypt,
+  generateSessionToken,
   hashPassword,
   verifyPassword,
 } from '@/utils';
+import { SessionRepository } from '@/session/session.repository';
 
 @Injectable()
 export class AdminService {
@@ -27,11 +27,27 @@ export class AdminService {
   constructor(
     private readonly adminRepository: AdminRepository,
     private readonly authRepository: AuthRepository,
-    private readonly userService: UserService,
+    private readonly sessionRepository: SessionRepository,
   ) {}
 
   async getAdmins() {
     return await this.adminRepository.findAll();
+  }
+
+  async getMe(token: string) {
+    const sessionId = decodeToSessionId(token);
+    const result = await this.sessionRepository.findById(sessionId);
+    if (result === null || !result?.auth) {
+      throw new UnauthorizedException();
+    }
+    const { auth, ...session } = result;
+
+    if (!auth.admin) {
+      throw new UnauthorizedException();
+    }
+    const time = session.expires_at.getTime();
+    await this.sessionRepository.updateSession(sessionId, time);
+    return auth.admin;
   }
 
   async signup(payload: Signup) {
@@ -80,29 +96,26 @@ export class AdminService {
         throw new UnauthorizedException('Invalid Code');
       }
     } else {
-      if (payload.otp !== Number(config.defaultOTPCode)) {
+      if (payload.otp !== Number(env.defaultOTPCode)) {
         throw new UnauthorizedException('Invalid Code');
       }
     }
     if (!auth.admin) throw new NotFoundException('Admin Cannot Be Found');
-    const access_token = JwtSign({ auth_id: auth.id, sub: auth.admin.id });
-    const refresh_token = JwtSign(
-      { auth_id: auth.id, sub: auth.admin.id },
-      '3 Days',
-    );
+    const sessionToken = generateSessionToken();
+    const expires_at = this.sessionRepository.create({
+      auth_id: auth.id,
+      token: sessionToken,
+      two_factor_verified: !!auth.totp_key,
+    });
 
-    const data = {
-      ...auth.admin,
-      access_token,
-    };
     return {
-      data,
-      refresh_token,
+      ...auth.admin,
+      token: sessionToken,
+      expires_at: expires_at,
     };
   }
-
-  refreshToken(token: string) {
-    const decoded = JwtVerify(token);
-    return JwtSign(decoded);
+  async logout(token: string) {
+    const sessionId = decodeToSessionId(token);
+    return await this.sessionRepository.deleteSessionById(sessionId);
   }
 }

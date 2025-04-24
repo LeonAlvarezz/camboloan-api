@@ -6,7 +6,9 @@ import { auths } from './auths.schema';
 export const admins = pgTable('admins', {
   id: uuid().defaultRandom().unique().primaryKey(),
   username: varchar({ length: 255 }).notNull(),
-  auth_id: uuid().references(() => auths.id, { onDelete: 'cascade' }),
+  auth_id: uuid()
+    .notNull()
+    .references(() => auths.id, { onDelete: 'cascade' }),
   ...timestamps,
 });
 

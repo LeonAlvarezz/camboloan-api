@@ -1,11 +1,11 @@
 import { sha256 } from '@oslojs/crypto/sha2';
 import * as bcrypt from 'bcrypt';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 import {
   encodeBase32LowerCaseNoPadding,
   encodeHexLowerCase,
 } from '@oslojs/encoding';
-import { config } from '@/config';
+import { env } from '@/config';
 
 export function decodeToSessionId(token: string) {
   return encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
@@ -19,7 +19,7 @@ export function generateSessionToken(): string {
 }
 
 export async function hashPassword(password: string) {
-  const saltRounds = config.passwordSalt;
+  const saltRounds = env.passwordSalt;
   return await bcrypt.hash(password, Number(saltRounds));
 }
 

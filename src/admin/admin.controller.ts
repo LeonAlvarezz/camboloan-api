@@ -1,22 +1,15 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Req,
-  Res,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { AdminService } from './admin.service';
-import { AuthAccessToken, Login, Signup } from '../shared/dto/auth.dto';
+import { Login, Signup } from '../shared/dto/auth.dto';
 import { Auth } from 'decorators/auth.decorator';
-import { AuthJwt } from '@/auth/entities/auth.type';
+import { AuthResponse } from '@/auth/entities/auth.type';
 import { Public } from 'decorators/public-route.decorator';
 import { Response, Request } from 'express';
 import { CookieUtil } from '@/utils/cookie';
 import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 import { AdminDto, AuthenticatedAdminDto } from './dto/admin.dto';
 import { ApiEnvelopResponse } from 'decorators/response-data.decorator';
+import { SimpleSuccess } from '@/shared/types/base.type';
 
 @Controller('admins')
 export class AdminController {
@@ -34,10 +27,10 @@ export class AdminController {
   }
 
   @ApiOperation({ summary: 'Admin Get Me' })
-  @ApiEnvelopResponse(AuthJwt)
+  @ApiEnvelopResponse(AuthResponse)
   @ApiBearerAuth()
   @Get('me')
-  getMe(@Auth() admin: AuthJwt) {
+  getMe(@Auth() admin: AuthResponse) {
     return admin;
   }
 
@@ -59,25 +52,21 @@ export class AdminController {
     @Body() payload: Login,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { data, refresh_token } = await this.adminService.login(payload);
-    this.cookieUtil.setRefreshTokenCookie(res, refresh_token);
+    const data = await this.adminService.login(payload);
+    this.cookieUtil.setAdminCookie(res, data.token);
     return data;
   }
 
-  //TODO: Store the refresh token in Redis, so we can easily revoke it later
-  @ApiOperation({ summary: 'Admin Refresh Token' })
-  @ApiEnvelopResponse(AuthAccessToken)
-  @Post('refresh')
-  refresh(@Req() req: Request) {
-    const refresh_token = this.cookieUtil.getRefreshTokenCookie(req);
-    if (!refresh_token) {
-      throw new UnauthorizedException(
-        'Access Denied. No refresh token provided.',
-      );
-    }
-    const newAccessToken = this.adminService.refreshToken(refresh_token);
-    return {
-      access_token: newAccessToken,
-    };
+  @ApiOperation({ summary: 'Admin Logout' })
+  @ApiEnvelopResponse(SimpleSuccess)
+  @Public()
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) res: Response, @Req() req: Request) {
+    const token = this.cookieUtil.getAdminCookie(req);
+    await this.adminService.logout(token);
+    this.cookieUtil.deleteAdminCookie(res);
+    return res.json({
+      message: 'Logout Successful',
+    });
   }
 }

@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class AuthJwt {
+export class AuthResponse {
   @ApiProperty({ type: String, nullable: true })
   sub: string | null;
   @ApiProperty()
