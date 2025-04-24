@@ -1,4 +1,4 @@
-import { isAdminPath, JwtVerify } from '@/utils';
+import { isAdminPath } from '@/utils';
 import {
   CanActivate,
   ExecutionContext,
@@ -6,22 +6,24 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Request } from 'express';
-import { AuthJwt } from './entities/auth.type';
+import { AuthResponse } from './entities/auth.type';
 import { Reflector } from '@nestjs/core';
 import { IS_PUBLIC_KEY } from 'decorators/public-route.decorator';
 import { CookieUtil } from '@/utils/cookie';
+import { AdminService } from '@/admin/admin.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
     private cookieUtil: CookieUtil,
+    private adminService: AdminService,
   ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context
       .switchToHttp()
-      .getRequest<Request & { user: AuthJwt; admin: AuthJwt }>();
+      .getRequest<Request & { user: AuthResponse; admin: AuthResponse }>();
 
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
@@ -29,21 +31,19 @@ export class AuthGuard implements CanActivate {
     ]);
 
     if (isPublic) return true;
-
-    const token = this.extractTokenFromHeader(request);
+    const token = this.cookieUtil.getAdminCookie(request);
     const isAdminRoute = isAdminPath(request.originalUrl);
     if (!token) {
       throw new UnauthorizedException();
     }
 
     try {
-      const auth = JwtVerify(token);
-      // 💡 We're assigning the payload to the request object here
-      // so that we can access it in our route handlers
+      const auth = await this.adminService.getMe(token);
       if (isAdminRoute) {
-        request.admin = auth;
-      } else {
-        request.user = auth;
+        request.admin = {
+          auth_id: auth.auth_id,
+          sub: auth.id,
+        };
       }
     } catch {
       throw new UnauthorizedException();
@@ -51,8 +51,8 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromHeader(request: Request): string | undefined {
-    const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
-  }
+  // private extractTokenFromHeader(request: Request): string | undefined {
+  //   const [type, token] = request.headers.authorization?.split(' ') ?? [];
+  //   return type === 'Bearer' ? token : undefined;
+  // }
 }

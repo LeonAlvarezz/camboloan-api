@@ -1,27 +1,27 @@
 import type { CookieOptions, Request, Response } from 'express';
 import { Injectable, Req, Res } from '@nestjs/common';
+const ADMIN_COOKIE = 'admin_cookie';
 @Injectable()
 export class CookieUtil {
-  setRefreshTokenCookie(
-    @Res({ passthrough: true }) res: Response,
-    value: string,
-  ) {
+  setAdminCookie(@Res({ passthrough: true }) res: Response, value: string) {
     try {
       const options: CookieOptions = {
         httpOnly: true,
         sameSite: 'lax',
         secure: true,
-        path: '/admins/refresh',
         maxAge: 1000 * 60 * 60 * 24 * 15,
       };
-      res.cookie('refresh_token', value, options);
+      res.cookie(ADMIN_COOKIE, value, options);
     } catch (error) {
       console.log(error);
     }
   }
 
-  getRefreshTokenCookie(@Req() req: Request): string {
-    return req.cookies['refresh_token'];
+  getAdminCookie(@Req() req: Request): string {
+    return req.cookies[ADMIN_COOKIE];
+  }
+  deleteAdminCookie(res: Response): void {
+    this.deleteCookie(res, ADMIN_COOKIE);
   }
 
   deleteCookie(res: Response, name: string) {

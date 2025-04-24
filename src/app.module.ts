@@ -8,9 +8,10 @@ import { ResponseInterceptor } from 'interceptors/response.interceptor';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/auth.guard';
 import { UtilModule } from './utils/util.module';
+import { SessionModule } from './session/session.module';
 
 @Module({
-  imports: [UserModule, AdminModule, AuthModule, UtilModule],
+  imports: [UserModule, AdminModule, AuthModule, UtilModule, SessionModule],
   controllers: [AppController],
   providers: [
     AppService,
