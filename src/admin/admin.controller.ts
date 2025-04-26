@@ -1,14 +1,14 @@
 import { Body, Controller, Get, Post, Req, Res } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { Login, Signup } from '../shared/dto/auth.dto';
-import { Auth } from 'decorators/auth.decorator';
+import { Auth } from '@/decorators/auth.decorator';
 import { AuthResponse } from '@/auth/entities/auth.type';
-import { Public } from 'decorators/public-route.decorator';
+import { Public } from '@/decorators/public-route.decorator';
 import { Response, Request } from 'express';
 import { CookieUtil } from '@/utils/cookie';
 import { ApiBearerAuth, ApiBody, ApiOperation } from '@nestjs/swagger';
 import { AdminDto, AuthenticatedAdminDto } from './dto/admin.dto';
-import { ApiEnvelopResponse } from 'decorators/response-data.decorator';
+import { ApiEnvelopResponse } from '@/decorators/response-data.decorator';
 import { SimpleSuccess } from '@/shared/types/base.type';
 
 @Controller('admins')

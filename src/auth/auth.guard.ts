@@ -8,7 +8,7 @@ import {
 import { Request } from 'express';
 import { AuthResponse } from './entities/auth.type';
 import { Reflector } from '@nestjs/core';
-import { IS_PUBLIC_KEY } from 'decorators/public-route.decorator';
+import { IS_PUBLIC_KEY } from '@/decorators/public-route.decorator';
 import { CookieUtil } from '@/utils/cookie';
 import { AdminService } from '@/admin/admin.service';
 
